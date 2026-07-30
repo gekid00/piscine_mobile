@@ -1,0 +1,18 @@
+# Dépendances (réinstaller avec npm install)
+node_modules/
+
+# Caches Expo / Metro
+.expo/
+.expo-shared/
+dist/
+web-build/
+
+# Logs
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# OS / éditeur
+.DS_Store
+*.pem
