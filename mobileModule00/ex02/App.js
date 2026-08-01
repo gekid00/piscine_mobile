@@ -1,46 +1,54 @@
 import { StatusBar } from 'expo-status-bar';
-import { Button, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useState } from 'react';
 
+function CalcButton({ label }){
+  return(
+    <Pressable
+      style={styles.btn}
+      onPress={() => console.log('button pressed :', label)}
+    >
+      <Text style={styles.btnText}>{label}</Text>
+    </Pressable>
+  );
+}
 
-
-export default function App()
-{
-  return (   
+export default function App(){
+  return (
     <View style={styles.container}>
       <View style={styles.band}>
-        <Text> Calculator </Text>
+        <Text style={styles.bandText}>Calculator</Text>
       </View>
       <View style={styles.texts}>
-        <Text> 0 </Text>
-        <Text> 0 </Text>
+        <Text style={styles.expr}>0</Text>
+        <Text style={styles.result}>0</Text>
       </View>
       <View style={styles.buttons}>
         <View style={styles.ligne}>
-          <Button title="7" />
-          <Button title="8" />
-          <Button title="9" />
-          <Button title="C" />
-          <Button title="AC" />
+          <CalcButton label="7" />
+          <CalcButton label="8" />
+          <CalcButton label="9" />
+          <CalcButton label="C" />
+          <CalcButton label="AC" />
         </View>
         <View style={styles.ligne}>
-          <Button title="4" />
-          <Button title="5" />
-          <Button title="6" />
-          <Button title="+" />
-          <Button title="-" />
+          <CalcButton label="4" />
+          <CalcButton label="5" />
+          <CalcButton label="6" />
+          <CalcButton label="+" />
+          <CalcButton label="-" />
         </View>
         <View style={styles.ligne}>
-          <Button title="1" />
-          <Button title="2" />
-          <Button title="3" />
-          <Button title="*" />
-          <Button title="/" />
+          <CalcButton label="1" />
+          <CalcButton label="2" />
+          <CalcButton label="3" />
+          <CalcButton label="*" />
+          <CalcButton label="/" />
         </View>
         <View style={styles.ligne}>
-          <Button title="0" />
-          <Button title="." />
-          <Button title="=" />
+          <CalcButton label="0" />
+          <CalcButton label="." />
+          <CalcButton label="=" />
         </View>
       </View>
     </View>
@@ -55,20 +63,47 @@ const styles = StyleSheet.create(
   },
   band: {
     height: 56,
-    backgroundColor: '#fff',
+    backgroundColor: '#6200ee',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bandText: {
+    color: 'white',
+    fontSize: 22,
+    fontWeight: 'bold',
   },
   texts: {
     flex: 2,
     alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+    padding: 16,
     backgroundColor: '#fff',
   },
+  expr: {
+    fontSize: 32,
+    color: 'black',
+  },
+  result: {
+    fontSize: 24,
+    color: 'gray',
+  },
   buttons: {
-    alignItems: 'flex-end',
+    flex: 5,
     backgroundColor: '#fff',
   },
   ligne: {
-    flexDirection: "row",
-    alignItems: 'flex-end',
-    backgroundColor: '#fff',
+    flex: 1,
+    flexDirection: 'row',
+  },
+  btn: {
+    flex: 1,
+    margin: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#eee',
+    borderRadius: 4,
+  },
+  btnText: {
+    fontSize: 18,
   },
 });

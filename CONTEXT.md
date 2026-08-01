@@ -1,7 +1,7 @@
 # Piscine Mobile — Contexte de travail
 
 > Fichier pour reprendre le travail d'une machine à l'autre (maison ⇄ école).
-> Dernière mise à jour : module 0, exo 02 en cours.
+> Dernière mise à jour : **module 0 TERMINÉ**. Prochain : module 1 (weather_app).
 
 ## Le projet
 
@@ -41,22 +41,34 @@ Une appli par « Files to turn in » du sujet (pas par exo) :
 
 ## Avancement
 
-- [x] **ex00** — texte + bouton centrés, clic → `console.log('Button pressed')`. Validé.
-- [x] **ex01** — le texte bascule au clic (A simple text ⇄ Hello World!). **Concept appris : le state (`useState`).** Validé.
-- [ ] **ex02** — coquille calculatrice (en cours) :
-  - [x] barre du haut "Calculator" (`View` + `Text`, `height: 56`)
-  - [x] 2 afficheurs à "0"
-  - [x] grille de boutons (4 lignes, `flexDirection: 'row'`, boutons en `title="..."`)
-  - [ ] **rendre responsive** : le `<Button>` RN n'est pas stylable/dimensionnable →
-        envelopper chaque bouton dans `<View style={{ flex: 1 }}>` OU passer à `<Pressable>`.
-  - [ ] **morceau 4** : au clic, chaque bouton fait `console.log('button pressed :', valeur)`.
-- [ ] **calculator_app** — logique de calcul (lib `expr-eval`, `try/catch`, jamais planter).
+### Module 0 — TERMINÉ ✅
+- [x] **ex00** — texte + bouton centrés, clic → `console.log('Button pressed')`.
+- [x] **ex01** — le texte bascule au clic. **Concept : le state (`useState`).**
+- [x] **ex02** — coquille calculatrice : barre "Calculator", 2 afficheurs, grille de
+      boutons responsive via `<Pressable>` + composant réutilisable `CalcButton`, log au clic.
+- [x] **calculator_app** — calcul fonctionnel avec `expr-eval` (`Parser.evaluate`),
+      `try/catch` → jamais de crash. Gère négatifs, décimaux, priorités, C/AC/=, div par 0.
 
-## Prochaines étapes immédiates (ex02)
+Patterns clés appris au module 0 :
+- Composant réutilisable `CalcButton` (évite de répéter le code).
+- **Passer une fonction en prop** parent→enfant : `<CalcButton onPress={handlePress} />`,
+  l'enfant l'appelle `onPress(label)`. (handlePress DOIT être dans App pour voir les states.)
+- `try/catch` autour de l'évaluation = garantie "never crash".
+- Style de code : accolades Allman (à la 42), camelCase, `return (` collé (piège ASI).
 
-1. Rendre la grille responsive (wrapper `View flex:1` par bouton, ou `Pressable`).
-2. Ajouter le `onPress` de chaque bouton → log de son texte dans la console.
-3. Une fois ex02 validé → copier dans `calculator_app/` et attaquer la logique.
+### Module 1 — À FAIRE (weather_app)
+Structure de l'appli météo : voir `module1.pdf`. En résumé :
+- BottomBar 3 onglets : Currently / Today / Weekly.
+- TopBar : barre de recherche + bouton géolocalisation.
+- Navigation par clic d'onglet ET par swipe.
+- Pas encore de vraies données : chaque onglet affiche juste son nom + le texte cherché.
+- Libs probables : react-native-tab-view / @react-navigation (à décider au démarrage).
+
+## Prochaines étapes immédiates
+
+1. Créer le projet `mobileModule01/weather_app` (Expo, épinglé SDK 54).
+2. Lire `module1.pdf` en détail et découper les 2 exos.
+3. Choisir la lib de navigation/onglets.
 
 ## Concepts déjà vus (mémo)
 
