@@ -1,7 +1,7 @@
 # Piscine Mobile — Contexte de travail
 
 > Fichier pour reprendre le travail d'une machine à l'autre (maison ⇄ école).
-> Dernière mise à jour : **module 0 TERMINÉ**. Prochain : module 1 (weather_app).
+> Dernière mise à jour : **modules 0 et 1 TERMINÉS**. Prochain : module 2 (medium_weather_app).
 
 ## Le projet
 
@@ -56,19 +56,36 @@ Patterns clés appris au module 0 :
 - `try/catch` autour de l'évaluation = garantie "never crash".
 - Style de code : accolades Allman (à la 42), camelCase, `return (` collé (piège ASI).
 
-### Module 1 — À FAIRE (weather_app)
-Structure de l'appli météo : voir `module1.pdf`. En résumé :
-- BottomBar 3 onglets : Currently / Today / Weekly.
-- TopBar : barre de recherche + bouton géolocalisation.
-- Navigation par clic d'onglet ET par swipe.
-- Pas encore de vraies données : chaque onglet affiche juste son nom + le texte cherché.
-- Libs probables : react-native-tab-view / @react-navigation (à décider au démarrage).
+### Module 1 — TERMINÉ ✅ (weather_app)
+- [x] **ex00 BottomBar** : 3 onglets (Currently/Today/Weekly) avec icône + nom,
+      navigation clic + swipe, Currently par défaut.
+- [x] **ex01 TopBar** : champ de recherche + bouton géoloc. Taper du texte ou cliquer
+      géoloc met à jour les 3 vues (affichent nom onglet + valeur).
+
+Choix techniques module 1 :
+- Lib onglets : **`react-native-tab-view`** (+ `react-native-pager-view`) — gère
+  clic + swipe. Barre en bas via `tabBarPosition="bottom"`.
+- Icônes : **`@expo/vector-icons`** (`Ionicons`), déjà inclus dans Expo.
+- API v4 : les icônes/labels de la barre se passent via la prop **`options`** de `<TabBar>`
+  (objet keyé par `route.key`), branchée par un `renderTabBar` custom.
+- État partagé : un state `search` dans `App`, lu par `renderScene` → toutes les vues
+  se mettent à jour. `TextInput` contrôlé (`value` + `onChangeText`).
+
+### Module 2 — À FAIRE (medium_weather_app)
+Continuation de weather_app : voir `module2.pdf`. En résumé :
+- Copier weather_app → medium_weather_app.
+- Géoloc réelle via GPS du device (**`expo-location`**, PAS d'API externe pour ça).
+  Gérer permission accordée ET refusée.
+- APIs Open-Meteo (pas de clé requise) : Geocoding (ville→coords + suggestions) +
+  Weather Forecast. Remplir les 3 vues (Currently/Today/Weekly) avec vraies données.
+- Liste de suggestions de villes dynamique sous la recherche.
+- Gestion d'erreurs : ville inexistante, connexion API échouée.
 
 ## Prochaines étapes immédiates
 
-1. Créer le projet `mobileModule01/weather_app` (Expo, épinglé SDK 54).
-2. Lire `module1.pdf` en détail et découper les 2 exos.
-3. Choisir la lib de navigation/onglets.
+1. Copier `mobileModule01/weather_app` → `mobileModule02/medium_weather_app`.
+2. Installer `expo-location`.
+3. Attaquer ex00 (géoloc GPS + affichage des coordonnées).
 
 ## Concepts déjà vus (mémo)
 

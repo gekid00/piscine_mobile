@@ -1,4 +1,3 @@
-import { StatusBar } from 'expo-status-bar';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useState } from 'react';
 import { Parser } from 'expr-eval';
