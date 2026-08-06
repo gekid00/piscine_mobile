@@ -1,18 +1,50 @@
-# Dépendances (réinstaller avec npm install)
-node_modules/
+# --- Flutter / Dart ---
+**/.dart_tool/
+**/build/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/generated_plugin_registrant.dart
+.flutter-versions
+# NB : pubspec.lock est VERSIONNÉ (c'est une appli, pas une lib) -> ne pas l'ignorer.
 
-# Caches Expo / Metro
+# --- Android ---
+**/android/.gradle/
+**/android/captures/
+**/android/local.properties
+**/android/key.properties
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+*.jks
+*.keystore
+
+# --- iOS (si un jour) ---
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/App.framework
+**/ios/Flutter/flutter_export_environment.sh
+
+# --- IDE / éditeur ---
+.idea/
+*.iml
+*.iws
+.vscode/
+*.swp
+
+# --- Logs / OS ---
+*.log
+.DS_Store
+
+# --- Ancienne stack React Native / Expo (historique) ---
+node_modules/
 .expo/
 .expo-shared/
 dist/
 web-build/
-
-# Logs
-*.log
 npm-debug.*
 yarn-debug.*
 yarn-error.*
-
-# OS / éditeur
-.DS_Store
 *.pem
