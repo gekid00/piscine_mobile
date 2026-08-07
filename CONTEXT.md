@@ -1,8 +1,8 @@
 # Piscine Mobile — Contexte de travail (Flutter)
 
 > Fichier pour reprendre le travail d'une machine à l'autre (maison ⇄ école).
-> **État : reprise à zéro en Flutter/Dart.** L'ancienne version React Native est archivée
-> (voir « Historique »). Prochain : module 0, ex00.
+> **État : reprise à zéro en Flutter/Dart.** L'ancien code React Native a été supprimé
+> (il reste dans l'historique git, voir « Historique »). En cours : module 0, ex00.
 
 ## Le projet
 
@@ -281,5 +281,6 @@ flutter run          # ou: flutter run -d chrome / -d web-server
 ## Historique
 
 Les modules 0 et 1 avaient été faits en **React Native + Expo** avant la bascule vers Flutter.
-Ce code n'est plus la référence — le sujet se lit maintenant tel quel, sans traduction.
-Ce qui reste utile de cette première passe, c'est la **compréhension des exercices**, pas le code.
+Ce code a été supprimé du repo pour repartir propre ; il reste consultable dans l'historique
+git (commit `8dca611`, sur `main`). Ce qui reste utile de cette première passe, c'est la
+**compréhension des exercices**, pas le code.
