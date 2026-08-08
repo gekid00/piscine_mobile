@@ -1,8 +1,9 @@
 # Piscine Mobile — Contexte de travail (Flutter)
 
-> Fichier pour reprendre le travail d'une machine à l'autre (maison ⇄ école).
+> Fichier pour reprendre le travail d'une machine à l'autre (maison ⇄ école ⇄ téléphone).
 > **État : reprise à zéro en Flutter/Dart.** L'ancien code React Native a été supprimé
-> (il reste dans l'historique git, voir « Historique »). En cours : module 0, ex00.
+> (il reste dans l'historique git, voir « Historique »).
+> **En cours : module 0, ex00** — squelette de `main.dart` posé, il reste le `children:`.
 
 ## Le projet
 
@@ -55,40 +56,51 @@ explicitement : « copy your previous project into a new folder »).
 
 ## Setup technique
 
-### Installation
+### Machine « maison » (WSL) — DÉJÀ INSTALLÉE ✅
 
-Flutter n'est pas encore installé. À faire des deux côtés (maison + école) :
+- Repo : `/home/gekido/dev/mobile` (dans le FS WSL), branche `claude/mobile-piscine-flutter-5250uq`.
+- **Flutter 3.44.9 / Dart 3.12.2**, installé dans `~/flutter` (tarball officiel décompressé,
+  pas d'apt, pas de sudo requis).
+- `export PATH="$HOME/flutter/bin:$PATH"` a été ajouté à `~/.bashrc` → ouvrir un **nouveau**
+  terminal pour que `flutter` soit reconnu.
+
+Si un jour l'install est à refaire ailleurs sans droits root :
 
 ```bash
-flutter --version        # doit répondre : Flutter stable récent (3.3x+), Dart 3.x
-flutter doctor           # doit être vert sur "Flutter" + "Android toolchain"
+curl -s https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json  # trouver l'URL stable
+curl -o /tmp/flutter.tar.xz <url_du_tarball> && tar xf /tmp/flutter.tar.xz -C ~
+echo 'export PATH="$HOME/flutter/bin:$PATH"' >> ~/.bashrc
 ```
 
-Si `flutter doctor` râle sur les licences Android : `flutter doctor --android-licenses`.
+### Ce qui manque encore sur cette machine
 
-### Le point délicat : WSL
+`flutter doctor` est rouge sur trois lignes, et c'est **normal / sans impact pour l'instant** :
 
-Je bosse sous **WSL**, et Flutter sous WSL ne voit ni les téléphones USB branchés sur
-Windows, ni l'émulateur Android de Windows. Deux stratégies, à trancher au premier lancement :
+| Manquant | Bloque quoi | Quand le régler |
+|---|---|---|
+| Android toolchain | émulateur + vrai téléphone | **avant le module 02** (GPS) |
+| Chrome | `flutter run -d chrome` | jamais (on passe par `web-server`) |
+| Linux toolchain | `flutter run -d linux` | jamais (besoin de `ninja-build`, `libgtk-3-dev`, `clang`) |
 
-**Option A — tout sur Windows (recommandée).**
-Installer Flutter SDK + Android Studio **côté Windows**, garder le repo dans le système de
-fichiers **Windows** (`C:\dev\piscine_mobile`, pas `\\wsl$\...` : compiler à travers la
-frontière WSL/Windows est lent et casse le file-watching). Éditer avec VS Code (Windows) ou
-Android Studio. C'est le chemin le moins douloureux : émulateur, hot reload, USB, Firebase,
-tout marche direct.
+### Comment je lance l'appli aujourd'hui
 
-**Option B — Flutter dans WSL.**
-Marche pour le web (`flutter run -d web-server --web-port 8080`, puis ouvrir
-`http://localhost:8080` depuis Windows : WSL2 forwarde localhost). Suffisant pour itérer sur
-l'UI des modules 0 et 1. Pour un vrai device Android il faut passer par le **débogage sans
-fil** (`adb pair` / `adb connect <ip>:<port>` depuis WSL vers le téléphone du même réseau).
-Le desktop Linux (`-d linux`) nécessite WSLg + `ninja-build`, `libgtk-3-dev`, `clang`.
+Pas de Chrome ni d'Android sur cette machine → **`web-server`** : Flutter sert l'appli en HTTP,
+et je l'ouvre dans le navigateur **Windows** (WSL2 forwarde `localhost` tout seul).
 
-**Attention :** le module 2 exige le **GPS du device** et interdit une API externe de géoloc,
-et les modules 4-5 utilisent Firebase Auth (Google/GitHub). Ces trois choses veulent un vrai
-Android (ou un émulateur avec Google Play Services). Le web sert à itérer vite sur la mise en
-page, pas à valider — **la soutenance se fait sur un device/émulateur Android.**
+```bash
+cd ~/dev/mobile/mobileModule00/ex00
+flutter run -d web-server --web-port 8080
+# puis http://localhost:8080 dans le navigateur Windows
+```
+
+Laisser ce terminal ouvert : c'est lui qui donne **`r`** (hot reload), **`R`** (hot restart),
+**`q`** (quitter), et qui affiche les `debugPrint`.
+
+**Attention pour la suite :** le module 02 exige le **GPS du device** (API externe interdite),
+et les modules 04-05 utilisent Firebase Auth. Le web ne suffira plus — il faudra un vrai
+Android. Deux voies : installer l'Android SDK dans WSL + **débogage sans fil**
+(`adb pair` / `adb connect <ip>:<port>` vers le téléphone du même réseau), ou basculer tout le
+setup côté Windows. **La soutenance se fait sur un device/émulateur Android**, pas sur le web.
 
 ### Commandes du quotidien
 
@@ -125,11 +137,17 @@ Pour GitHub, passer par `firebase_auth` → `signInWithProvider(GithubAuthProvid
 
 ## Avancement
 
-### Module 0 — À FAIRE (Introduction to Mobile Development)
+### Module 0 — EN COURS (Introduction to Mobile Development)
 
-- [ ] **ex00 — A basic display** : un `Text` + un bouton en dessous, tous deux centrés
-      horizontalement et verticalement. Clic → `debugPrint('Button pressed')` dans la console
-      de debug. Responsive.
+- [ ] **ex00 — A basic display** — *en cours*. Un `Text` + un bouton en dessous, tous deux
+      centrés horizontalement et verticalement. Clic → `debugPrint('Button pressed')` dans la
+      console de debug. Responsive.
+      **Fait :** projet créé (`flutter create --platforms=android,web --org com.rayane
+      mobileModule00/ex00`), code de démo supprimé, squelette de `main.dart` écrit et validé
+      par `flutter analyze`.
+      **Reste :** remplir le `children:` de la `Column` (le `Text` + l'`ElevatedButton`),
+      brancher le `onPressed`, supprimer `test/widget_test.dart` (il référence encore la
+      classe `MyApp` du code de démo → seule erreur restante de `flutter analyze`).
 - [ ] **ex01 — Say Hello to the World** : nouveau projet repris de ex00. Le texte bascule
       entre le texte initial et `"Hello World!"` à chaque clic. → **Concept clé :
       `StatefulWidget` + `setState()`.**
@@ -241,12 +259,59 @@ Copie de `diary_app` → `advanced_diary_app`. 3 pages : login, profil, agenda.
 
 ## Prochaines étapes immédiates
 
-1. Trancher **Option A (Flutter sur Windows)** vs **Option B (Flutter dans WSL)**, installer
-   le SDK, vérifier `flutter doctor`.
-2. `flutter create --platforms=android,web --org com.rayane mobileModule00/ex00`.
-3. Attaquer ex00 : `Scaffold` + `Center` + `Column` + `Text` + bouton, `debugPrint` au clic.
+1. `rm mobileModule00/ex00/test/widget_test.dart` (test de démo cassé).
+2. Remplir le `children:` de la `Column` : un `Text` et un `ElevatedButton`.
+3. Brancher le bouton : `onPressed: () { debugPrint('Button pressed'); }`.
+4. Vérifier le centrage vertical (voir le piège `Column` plus bas), puis `flutter analyze`.
+
+## Où j'en suis dans `main.dart` (ex00)
+
+État validé par `flutter analyze` — il ne manque que le `children:` :
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(
+    MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Column(
+            // ← children: [ Text, ElevatedButton ]
+          ),
+        ),
+      ),
+    ),
+  );
+}
+```
+
+Choix assumé pour ex00 : **pas de classe `MyApp`**, `runApp()` reçoit directement l'arbre.
+L'écran est statique, donc `StatelessWidget` + `build()` + `@override` seraient du bruit.
+**Ça ne tiendra plus dès ex01** (le texte change au clic → `StatefulWidget` → il faudra une classe).
 
 ## Concepts Flutter à assimiler (mémo, à remplir au fur et à mesure)
+
+### Acquis au module 0
+
+- **Un widget s'écrit comme un appel de fonction** : `Text('salut')`.
+- **Les paramètres sont nommés** : `nom: valeur`, avec une **virgule après chaque valeur**
+  (y compris la dernière — c'est ce qui fait que `dart format` aère le code verticalement au
+  lieu de tout tasser sur une ligne).
+- **Un `nom:` n'existe jamais seul** : il vit toujours *dans les parenthèses du widget à qui
+  il appartient*. `home:` → `MaterialApp`, `body:` → `Scaffold`, `child:` → `Center`,
+  `children:` → `Column`. ← *l'erreur qui m'a coûté deux essais.*
+- **`child:` = un seul enfant, `children: [ ]` = une liste.** C'est pour ça qu'il faut
+  `Center` **et** `Column` : `Center` ne peut pas contenir deux choses à lui seul.
+- **Piège du centrage** : une `Column` prend toute la hauteur et colle ses enfants **en haut**
+  par défaut. Leviers : `mainAxisAlignment` (axe de la colonne = vertical),
+  `crossAxisAlignment` (perpendiculaire = horizontal), `mainAxisSize` (occuper toute la place
+  ou juste celle des enfants).
+- **Responsive = aucun pixel fixe** pour les positions/tailles. `Center` + `Column` +
+  `Expanded` sont responsives par construction. Un `SizedBox(height: 20)` d'espacement voulu
+  reste légitime. Débordement = rayures jaunes et noires à l'écran.
+
+### À venir
 
 - **Tout est widget.** Un widget = une description immuable d'un bout d'UI. On ne « modifie »
   pas un widget, on en **reconstruit** un nouveau.
@@ -269,14 +334,35 @@ Copie de `diary_app` → `advanced_diary_app`. 3 pages : login, profil, agenda.
   des accolades Allman de la Norme 42 — ici c'est le style Dart qui prime) et garder
   `flutter analyze` clean.
 
-## Workflow reprise à l'école
+## Workflow reprise (école, ou nouvelle machine)
 
 ```bash
 git clone git@github.com:gekid00/piscine_mobile.git   # ou git pull si déjà cloné
 cd piscine_mobile/mobileModule00/ex00
-flutter pub get      # deps non versionnées → réinstaller
-flutter run          # ou: flutter run -d chrome / -d web-server
+flutter pub get                            # deps non versionnées → réinstaller
+flutter run -d web-server --web-port 8080  # ou -d chrome / -d <device android>
 ```
+
+Si Flutter n'est pas installé sur la machine : voir « Machine maison (WSL) » plus haut, la
+méthode par tarball marche sans droits root.
+
+## Travailler depuis le téléphone (Remote Control)
+
+Pour continuer **la même session Claude Code** depuis le téléphone, avec le contexte, les
+fichiers locaux et le Flutter installé — la session tourne sur le PC, le téléphone la pilote :
+
+```bash
+claude --remote-control
+```
+
+Puis retrouver la session depuis Claude sur le téléphone.
+
+À ne pas confondre avec `claude --cloud` / claude.ai/code : ça crée une session dans un
+environnement **distant**, qui n'a ni les fichiers locaux ni Flutter installé.
+
+Le flag se pose **au démarrage** d'une session : une session déjà lancée sans lui ne peut pas
+être récupérée. D'où l'intérêt de tenir ce fichier à jour — c'est lui, et pas l'historique de
+chat, qui assure la continuité entre machines.
 
 ## Historique
 
