@@ -3,7 +3,7 @@
 > Fichier pour reprendre le travail d'une machine à l'autre (maison ⇄ école ⇄ téléphone).
 > **État : reprise à zéro en Flutter/Dart.** L'ancien code React Native a été supprimé
 > (il reste dans l'historique git, voir « Historique »).
-> **En cours : module 0, ex00** — squelette de `main.dart` posé, il reste le `children:`.
+> **Module 0 : ex00 TERMINÉ ✅.** Prochain : ex01 (le texte bascule au clic → `StatefulWidget`).
 
 ## Le projet
 
@@ -139,15 +139,12 @@ Pour GitHub, passer par `firebase_auth` → `signInWithProvider(GithubAuthProvid
 
 ### Module 0 — EN COURS (Introduction to Mobile Development)
 
-- [ ] **ex00 — A basic display** — *en cours*. Un `Text` + un bouton en dessous, tous deux
-      centrés horizontalement et verticalement. Clic → `debugPrint('Button pressed')` dans la
-      console de debug. Responsive.
-      **Fait :** projet créé (`flutter create --platforms=android,web --org com.rayane
-      mobileModule00/ex00`), code de démo supprimé, squelette de `main.dart` écrit et validé
-      par `flutter analyze`.
-      **Reste :** remplir le `children:` de la `Column` (le `Text` + l'`ElevatedButton`),
-      brancher le `onPressed`, supprimer `test/widget_test.dart` (il référence encore la
-      classe `MyApp` du code de démo → seule erreur restante de `flutter analyze`).
+- [x] **ex00 — A basic display** ✅ — `Text` + `ElevatedButton` centrés sur les deux axes,
+      clic → `debugPrint('Button pressed')`. `flutter analyze` clean, `dart format` passé.
+      Centrage obtenu avec `Center` + `Column(mainAxisSize: MainAxisSize.min)` — choix assumé
+      plutôt que `mainAxisAlignment: .center`, pour que chaque widget garde une seule
+      responsabilité (`Center` centre, `Column` empile). À savoir défendre en peer-eval.
+      `test/widget_test.dart` supprimé (il référençait la classe `MyApp` du code de démo).
 - [ ] **ex01 — Say Hello to the World** : nouveau projet repris de ex00. Le texte bascule
       entre le texte initial et `"Hello World!"` à chaque clic. → **Concept clé :
       `StatefulWidget` + `setState()`.**
@@ -259,14 +256,13 @@ Copie de `diary_app` → `advanced_diary_app`. 3 pages : login, profil, agenda.
 
 ## Prochaines étapes immédiates
 
-1. `rm mobileModule00/ex00/test/widget_test.dart` (test de démo cassé).
-2. Remplir le `children:` de la `Column` : un `Text` et un `ElevatedButton`.
-3. Brancher le bouton : `onPressed: () { debugPrint('Button pressed'); }`.
-4. Vérifier le centrage vertical (voir le piège `Column` plus bas), puis `flutter analyze`.
+1. `flutter create --platforms=android,web --org com.rayane mobileModule00/ex01`.
+2. Recopier le `main.dart` d'ex00 comme point de départ.
+3. **La nouveauté d'ex01 : le texte doit changer au clic** → il faut mémoriser lequel est
+   affiché → `StatefulWidget` + `setState()`. C'est là que `runApp()` ne pourra plus recevoir
+   l'arbre directement : il faudra enfin écrire une classe.
 
-## Où j'en suis dans `main.dart` (ex00)
-
-État validé par `flutter analyze` — il ne manque que le `children:` :
+## Le `main.dart` d'ex00 (point de départ d'ex01)
 
 ```dart
 import 'package:flutter/material.dart';
@@ -277,7 +273,16 @@ void main() {
       home: Scaffold(
         body: Center(
           child: Column(
-            // ← children: [ Text, ElevatedButton ]
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Test'),
+              ElevatedButton(
+                onPressed: () {
+                  debugPrint('Button pressed');
+                },
+                child: Text('Click me'),
+              ),
+            ],
           ),
         ),
       ),
@@ -288,7 +293,7 @@ void main() {
 
 Choix assumé pour ex00 : **pas de classe `MyApp`**, `runApp()` reçoit directement l'arbre.
 L'écran est statique, donc `StatelessWidget` + `build()` + `@override` seraient du bruit.
-**Ça ne tiendra plus dès ex01** (le texte change au clic → `StatefulWidget` → il faudra une classe).
+**Ça ne tiendra plus dès ex01.**
 
 ## Concepts Flutter à assimiler (mémo, à remplir au fur et à mesure)
 
@@ -310,6 +315,27 @@ L'écran est statique, donc `StatelessWidget` + `build()` + `@override` seraient
 - **Responsive = aucun pixel fixe** pour les positions/tailles. `Center` + `Column` +
   `Expanded` sont responsives par construction. Un `SizedBox(height: 20)` d'espacement voulu
   reste légitime. Débordement = rayures jaunes et noires à l'écran.
+- **Certaines cases sont obligatoires** : `ElevatedButton` refuse de se construire sans
+  `onPressed` **et** `child`. Le compilateur le dit : *« The named parameter X is required »*.
+- **Enums** : `MainAxisSize.min`, `MainAxisAlignment.center`, `CrossAxisAlignment.start`…
+  Attention à la casse : `mainAxisSize` = le paramètre, `MainAxisSize` = le type.
+- **Fonction anonyme** (Dart) : `() { ... }`, l'équivalent du `() => {}` de JS. On la **donne**
+  au bouton, on ne l'appelle pas → `onPressed: () { ... }`, jamais `onPressed: maFonction()`.
+- **Erreur que j'ai faite 3 fois** : répéter à droite des `:` le nom de la case
+  (`child: child`). À gauche = le nom imposé, à droite = le contenu. Jamais le même mot.
+- **`dart format .`** (et pas `flutter format`, supprimé des versions récentes).
+- **L'auto-import de VS Code ajoute des lignes en douce** en haut du fichier — il m'a collé un
+  `import 'dart:math';` pendant que je tapais `MainAxisSize.min`. `flutter analyze` les
+  attrape (*unused_import*).
+
+### Pièges d'outillage rencontrés
+
+- **`flutter: command not found`** dans un terminal déjà ouvert → le `~/.bashrc` a été modifié
+  après son lancement : `source ~/.bashrc`.
+- **Erreur `client.js` / `_JsonMap is not a subtype of List<Object?>`** au lancement web : bug
+  de l'outillage `webdev`/DWDS (le client de debug injecté), **pas du code**. `flutter analyze`
+  reste clean. Contournements : rafraîchir la page, relancer `flutter run`, ou en dernier
+  recours `--no-injected-client` (mais on perd le hot reload).
 
 ### À venir
 
