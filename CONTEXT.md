@@ -3,7 +3,12 @@
 > Fichier pour reprendre le travail d'une machine à l'autre (maison ⇄ école ⇄ téléphone).
 > **État : reprise à zéro en Flutter/Dart.** L'ancien code React Native a été supprimé
 > (il reste dans l'historique git, voir « Historique »).
-> **Module 0 : ex00 TERMINÉ ✅.** Prochain : ex01 (le texte bascule au clic → `StatefulWidget`).
+> **Module 0 TERMINÉ ✅ (4/4)** — commits `34bb1ad`, `7990f23`, `9cffab1`.
+> Prochain : **module 01 — weather_app** (`BottomBar` 3 onglets, clic **et** swipe).
+>
+> ⚠️ Jamais lancé dans un navigateur : tout est validé par tests automatisés (logique OK,
+> rendu réel non vérifié). À faire une fois avant la soutenance, **sur Android** de
+> préférence — c'est là que le correcteur évaluera.
 
 ## Le projet
 
@@ -137,7 +142,7 @@ Pour GitHub, passer par `firebase_auth` → `signInWithProvider(GithubAuthProvid
 
 ## Avancement
 
-### Module 0 — EN COURS (Introduction to Mobile Development)
+### Module 0 — TERMINÉ ✅ (Introduction to Mobile Development)
 
 - [x] **ex00 — A basic display** ✅ — `Text` + `ElevatedButton` centrés sur les deux axes,
       clic → `debugPrint('Button pressed')`. `flutter analyze` clean, `dart format` passé.
@@ -145,19 +150,26 @@ Pour GitHub, passer par `firebase_auth` → `signInWithProvider(GithubAuthProvid
       plutôt que `mainAxisAlignment: .center`, pour que chaque widget garde une seule
       responsabilité (`Center` centre, `Column` empile). À savoir défendre en peer-eval.
       `test/widget_test.dart` supprimé (il référençait la classe `MyApp` du code de démo).
-- [ ] **ex01 — Say Hello to the World** : nouveau projet repris de ex00. Le texte bascule
-      entre le texte initial et `"Hello World!"` à chaque clic. → **Concept clé :
-      `StatefulWidget` + `setState()`.**
-- [ ] **ex02 — More Buttons** : nouveau projet. `AppBar` titrée **"Calculator"**, deux
-      `TextField` (expression / résultat) affichant `"0"` pour l'instant, et la grille de
-      boutons : chiffres `0`-`9`, `.`, `AC`, `C`, `=`, `+`, `-`, `*`, `/`. Chaque clic
-      `debugPrint` le label du bouton. **Responsive sur téléphone ET tablette.**
-- [ ] **calculator_app — It's Alive!** : la calculatrice fonctionne pour de vrai
-      (`math_expressions`). Les deux `TextField` affichent l'expression et son résultat.
-      Doit gérer : `+ - * /`, expressions multi-opérations (`1 + 2 * 3 - 5 / 2`), **nombres
-      négatifs** (`-` avant le nombre), **décimaux**, `C` (efface le dernier caractère),
-      `AC` (efface tout). **L'appli ne doit JAMAIS crasher** : expression invalide, division
-      par 0, très grands nombres → tout doit être rattrapé (`try/catch`).
+- [x] **ex01 — Say Hello to the World** ✅ — `StatefulWidget` + `setState()`. La logique est
+      dans une méthode `_basculerTexte()` du `State`, pas dans le `onPressed` (plus lisible
+      dès que le corps dépasse 2 lignes). `onPressed: _basculerTexte` **sans parenthèses** :
+      on passe la fonction, on ne l'appelle pas. Le sujet d'ex01 ne demande **aucun**
+      `debugPrint` (vérifié dans le PDF) — c'est ex00 et ex02 qui l'exigent.
+- [x] **ex02 — More Buttons** ✅ — `AppBar` "Calculator", deux `TextField` en `readOnly`
+      affichant `"0"`, et 18 boutons **générés par un double `collection for`** depuis une
+      `static const List<List<String>> touches` (5 lignes × 4 colonnes). Chaque clic
+      `debugPrint` son label. Responsive via `Expanded` : autour de chaque `Row` (partage de
+      la hauteur) et de chaque bouton (partage de la largeur) — **aucune taille en pixels**.
+      Choix assumé : pas de `Spacer` sur la dernière ligne, donc `AC`/`C` font 50 % chacun.
+- [x] **calculator_app — It's Alive!** ✅ — `StatefulWidget`, deux `TextEditingController`
+      en membres du `State` (+ `dispose()`). `_appuyer(touche)` route vers `AC` / `C` / `=` /
+      saisie. Évaluation via `ShuntingYardParser().parse()` + `RealEvaluator().evaluate()`
+      (⚠️ `Parser` et `.evaluate(EvaluationType.REAL, ContextModel())` sont **dépréciés** en
+      `math_expressions` 3.x). `try/catch` + test `isFinite` → `"Error"`.
+      **Vérifié par test UI simulant les clics — 14 cas, aucun crash** : `1+2*3-5/2`=4.5,
+      `-5+3`=-2, `2.5*4`=10, `5/0`/`1+`/`**`/`0...`→Error, `99999999*99999999` OK.
+      Formatage : `toStringAsFixed(0)` si entier et `< 1e21`, sinon `toString()` — **pas**
+      `toInt().toString()` qui affichait un `.0` parasite sur les grands nombres.
 
 ### Module 1 — À FAIRE (weather_app)
 
@@ -328,6 +340,57 @@ L'écran est statique, donc `StatelessWidget` + `build()` + `@override` seraient
   `import 'dart:math';` pendant que je tapais `MainAxisSize.min`. `flutter analyze` les
   attrape (*unused_import*).
 
+### Acquis ex01 → ex03 (le dynamique)
+
+Analogies C/C++ — c'est ce qui a fait tilt :
+
+```
+build()            une fonction appelée EN BOUCLE  →  on n'y alloue jamais rien
+StatelessWidget    une fonction pure, aucun membre
+State              l'objet qui vit, avec ses variables membres
+dispose()          le destructeur (= free), appelé par Flutter, écrit par moi
+final              T* const : le pointeur ne bouge plus, l'objet pointé si
+State<Calculatrice>  un template C++, du TYPAGE — aucune donnée ne transite là-dedans
+```
+
+- **Pourquoi deux classes.** `MaPage extends StatefulWidget` est un **descripteur jetable**,
+  détruit/reconstruit sans arrêt. `_MaPageState` est l'objet qui **survit**. Donc : rien dans
+  la première (juste `createState()`), **tout** dans la seconde (variables, contrôleurs,
+  méthodes, `build()`).
+- `State<X> createState() => _XState();` se lit : *« quand on te le demande, fabrique-moi un
+  `_XState` neuf »*. Appelée **une seule fois**, au premier affichage.
+- **Deux façons de rafraîchir l'écran, ne pas les confondre :**
+  ```
+  variable nue (String)      →  ne prévient personne  →  setState() OBLIGATOIRE
+  TextEditingController      →  ChangeNotifier, prévient tout seul  →  pas de setState
+  ```
+  `controller: _expr` **abonne** le `TextField` au contrôleur. Écrire `_expr.text = '7'`
+  suffit : le champ se repeint seul, `build()` n'est **pas** rappelée.
+- **Tout `final` créé dans un `State`** (contrôleur, animation, listener) **doit être libéré
+  dans `dispose()`**, sinon fuite mémoire.
+- **`collection for` / `collection if`** — la particularité Dart qui génère les 18 boutons :
+  ```dart
+  children: [
+    for (final t in ligne) Expanded(child: ...),   // pas de .map(), pas de .toList()
+    if (ligne.length < 4) Spacer(flex: 4 - ligne.length),
+  ]
+  ```
+  **Pas d'accolades, pas de `;`** — c'est un `if`/`for` d'*expression*, pas d'instruction.
+  Des `{ }` créeraient un `Set`. La boucle produit des **widgets**, pas du texte.
+- **`flex` = un nombre de parts, pas de morceaux.** Chacun reçoit `son flex / somme des flex`
+  de la ligne. Donc `1+1` et `2+2` donnent le **même** 50/50 : seul le rapport compte.
+  Deux boutons seuls sur une `Row` prennent toujours 100 % → il faut un `Spacer` pour
+  « réserver » les colonnes manquantes. `Spacer` impose `flex > 0` (d'où le `if`).
+- **`Center` + `mainAxisSize.min` et `Expanded` sont contradictoires** : « je prends le
+  minimum » contre « je prends tout le reste » → assertion. Contenu compact centré (ex00/01)
+  ou remplir l'écran (calculatrice), il faut choisir.
+- **`onPressed: _maMethode`** (sans parenthèses) si aucun argument ;
+  **`onPressed: () => _maMethode(arg)`** s'il en faut un. Avec `_maMethode()` directement, la
+  fonction s'exécute pendant le `build()` → crash.
+- **Boutons renommés depuis Flutter 3** : `RaisedButton`→`ElevatedButton`,
+  `FlatButton`→`TextButton`, `OutlineButton`→`OutlinedButton`. Les vieilles réponses Stack
+  Overflow utilisent les noms morts.
+
 ### Pièges d'outillage rencontrés
 
 - **`flutter: command not found`** dans un terminal déjà ouvert → le `~/.bashrc` a été modifié
@@ -339,14 +402,6 @@ L'écran est statique, donc `StatelessWidget` + `build()` + `@override` seraient
 
 ### À venir
 
-- **Tout est widget.** Un widget = une description immuable d'un bout d'UI. On ne « modifie »
-  pas un widget, on en **reconstruit** un nouveau.
-- **`StatelessWidget`** = pas de mémoire, se contente de dessiner à partir de ses paramètres.
-  **`StatefulWidget`** = a un `State` qui survit aux reconstructions ; on le modifie **via
-  `setState(() { ... })`**, jamais en assignant directement (sinon rien ne se redessine).
-  C'est l'équivalent exact du `useState` de React.
-- **`build()`** est rappelée à chaque changement d'état : elle doit être rapide et sans effet
-  de bord.
 - **Layout** : `Column` (vertical) / `Row` (horizontal) avec `mainAxisAlignment` (le long de
   l'axe) et `crossAxisAlignment` (perpendiculaire) — même logique que Flexbox. `Expanded` /
   `Flex` pour raisonner en **parts** plutôt qu'en pixels → c'est ça, le responsive.
