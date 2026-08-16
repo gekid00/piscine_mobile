@@ -20,8 +20,17 @@ contenant une ou plusieurs applis.
 widgets, `AppBar`, `TabBarView`, `math_expressions`, `table_calendar`…). Plus besoin de
 traduire quoi que ce soit : le sujet se lit littéralement.
 
-**Pourquoi ce changement :** stage à venir dans une boîte mobile qui bosse en Flutter.
-Objectif double = valider la piscine **et** être opérationnel en Dart/Flutter à l'arrivée.
+**Pourquoi ce changement :** stage dans une boîte mobile qui bosse en Flutter — **il démarre
+le 2026-08-17**. Objectif double = valider la piscine **et** être opérationnel en Dart/Flutter.
+
+**Priorité assumée : maîtriser totalement les modules 00 → 02** plutôt que d'avancer vite
+jusqu'au 05. Les bases (widgets, état, async, HTTP/JSON) valent plus que la surface.
+
+**Ce que la piscine ne couvre PAS et qui se verra dès la première semaine de stage :**
+la **gestion d'état** au-delà de `setState` (Provider / Riverpod / BLoC — c'est l'écart le
+plus visible entre ce code et celui d'une boîte), la **navigation entre écrans**
+(`Navigator`, routes, `go_router` — les onglets n'en sont pas), l'**architecture** en
+`models/` `services/` `widgets/`, les tests, l'injection de dépendances.
 
 **Rôle de l'assistant (Claude) :** j'assiste, j'explique, je review. **C'est moi (Rayane) qui
 code de A à Z.** Ne pas demander de solutions complètes clé en main.
@@ -77,35 +86,93 @@ curl -o /tmp/flutter.tar.xz <url_du_tarball> && tar xf /tmp/flutter.tar.xz -C ~
 echo 'export PATH="$HOME/flutter/bin:$PATH"' >> ~/.bashrc
 ```
 
-### Ce qui manque encore sur cette machine
+### Android SDK + émulateur — INSTALLÉS ✅ (au moment d'attaquer le module 02)
 
-`flutter doctor` est rouge sur trois lignes, et c'est **normal / sans impact pour l'instant** :
+Tout en espace utilisateur, **sans `sudo`** sauf un paquet système :
 
-| Manquant | Bloque quoi | Quand le régler |
-|---|---|---|
-| Android toolchain | émulateur + vrai téléphone | **avant le module 02** (GPS) |
-| Chrome | `flutter run -d chrome` | jamais (on passe par `web-server`) |
-| Linux toolchain | `flutter run -d linux` | jamais (besoin de `ninja-build`, `libgtk-3-dev`, `clang`) |
+| Quoi | Où |
+|---|---|
+| JDK 17 Temurin | `~/jdk` |
+| Android SDK 36 (platform-tools, build-tools, emulator) | `~/Android/Sdk` |
+| AVD `piscine` | Pixel 7, Android 16, `google_apis_playstore`, x86_64 |
 
-### Comment je lance l'appli aujourd'hui
+`~/.bashrc` exporte `JAVA_HOME`, `ANDROID_HOME` et complète le `PATH`.
 
-Pas de Chrome ni d'Android sur cette machine → **`web-server`** : Flutter sert l'appli en HTTP,
-et je l'ouvre dans le navigateur **Windows** (WSL2 forwarde `localhost` tout seul).
+L'image `google_apis_playstore` est volontaire : les services Google sont nécessaires pour
+**Firebase aux modules 04-05**. Ne pas la remplacer par une image `default`.
+
+Deux choses ont demandé `sudo` (à refaire sur une autre machine) :
 
 ```bash
-cd ~/dev/mobile/mobileModule00/ex00
-flutter run -d web-server --web-port 8080
-# puis http://localhost:8080 dans le navigateur Windows
+sudo usermod -aG kvm $USER      # sinon l'émulateur tourne sans KVM = inutilisable
+                                # puis `wsl --shutdown` depuis PowerShell, et rouvrir WSL
+sudo apt install -y libnss3 libpulse0 libxcursor1 libxdamage1 libxcomposite1 \
+                    libasound2t64 libglu1-mesa
 ```
 
-Laisser ce terminal ouvert : c'est lui qui donne **`r`** (hot reload), **`R`** (hot restart),
-**`q`** (quitter), et qui affiche les `debugPrint`.
+Sans `libnss3`, l'émulateur démarre puis meurt sur
+`qemu-system-x86_64: error while loading shared libraries: libnss3.so`.
 
-**Attention pour la suite :** le module 02 exige le **GPS du device** (API externe interdite),
-et les modules 04-05 utilisent Firebase Auth. Le web ne suffira plus — il faudra un vrai
-Android. Deux voies : installer l'Android SDK dans WSL + **débogage sans fil**
-(`adb pair` / `adb connect <ip>:<port>` vers le téléphone du même réseau), ou basculer tout le
-setup côté Windows. **La soutenance se fait sur un device/émulateur Android**, pas sur le web.
+Si l'install est à refaire : JDK via l'API Adoptium, puis
+`commandlinetools-linux-*.zip` décompressé dans `~/Android/Sdk/cmdline-tools/latest`,
+`sdkmanager --licenses`, puis `sdkmanager "platform-tools" "platforms;android-36"
+"build-tools;36.0.0" "emulator" "system-images;android-36;google_apis_playstore;x86_64"`,
+`flutter config --android-sdk ~/Android/Sdk`, `avdmanager create avd -n piscine -d pixel_7`.
+Pas d'`unzip` sur cette machine → `python3 -m zipfile -e` + `chmod +x` sur les binaires.
+
+### Ce qui manque encore (et qui ne sera jamais réglé)
+
+| Manquant | Bloque quoi | Verdict |
+|---|---|---|
+| Chrome | `flutter run -d chrome` | inutile (on passe par `web-server` ou l'émulateur) |
+| Linux toolchain | `flutter run -d linux` | inutile (`ninja-build`, `libgtk-3-dev`, `clang`) |
+
+### Comment je lance l'appli
+
+**Par le Makefile à la racine du repo**, qui exporte lui-même `JAVA_HOME` / `ANDROID_HOME` /
+`PATH` (donc il marche même dans un terminal qui n'a pas rechargé le `.bashrc`) :
+
+```bash
+make                                 # démarre l'AVD si besoin, compile, installe, lance
+make emu                             # juste l'émulateur, en arrière-plan
+make web                             # repli navigateur, port 8080
+make check                           # dart format + flutter analyze
+make devices
+make PROJ=mobileModule00/calculator_app   # cibler un autre projet
+```
+
+`PROJ` par défaut pointe sur le projet du module en cours — **à mettre à jour dans le
+`Makefile` en changeant de module**.
+
+Deux subtilités encodées dans le `Makefile` :
+
+- l'AVD s'appelle `piscine` **tant qu'il est éteint**, puis `emulator-5554` une fois démarré →
+  la cible `run` résout l'id réel avec `adb devices` au lieu de le coder en dur ;
+- `flutter analyze` sort en **code 1 même pour un simple `info`** → `--no-fatal-infos`, sinon
+  `make check` échoue sur une suggestion de style.
+
+Laisser le terminal de `flutter run` ouvert : **`r`** (hot reload), **`R`** (hot restart),
+**`q`** (quitter), et c'est là que s'affichent les `debugPrint`.
+
+**Garder l'émulateur ouvert entre deux sessions** : ~60 s de démarrage contre 1 s de hot reload.
+Premier build Gradle après un `flutter clean` : 1 à 3 min.
+
+### Piloter l'émulateur en ligne de commande (test sans cliquer)
+
+```bash
+adb emu geo fix 2.3522 48.8566                    # injecter une position GPS (lon lat)
+adb shell pm grant  <pkg> android.permission.ACCESS_FINE_LOCATION
+adb shell pm revoke <pkg> android.permission.ACCESS_FINE_LOCATION
+adb shell pm set-permission-flags <pkg> <perm> user-fixed   # simule un refus définitif
+adb shell am force-stop <pkg>
+adb shell monkey -p <pkg> -c android.intent.category.LAUNCHER 1
+adb exec-out screencap -p > /tmp/shot.png         # capture d'écran
+adb shell input tap <x> <y> / input text "Paris" / input keyevent 66
+```
+
+Package des projets : `com.example.<nom_du_projet>`.
+Des dialogues système Android (« Try out your stylus ») peuvent s'intercaler et fausser
+les taps — piloter les permissions par `pm grant`/`pm revoke` plutôt qu'en cliquant.
 
 ### Commandes du quotidien
 
@@ -171,33 +238,42 @@ Pour GitHub, passer par `firebase_auth` → `signInWithProvider(GithubAuthProvid
       Formatage : `toStringAsFixed(0)` si entier et `< 1e21`, sinon `toString()` — **pas**
       `toInt().toString()` qui affichait un `.0` parasite sur les grands nombres.
 
-### Module 1 — À FAIRE (weather_app)
+### Module 1 — TERMINÉ ✅ (weather_app) — commit `07d67e5`
 
-- [ ] **ex00 — BottomBar** : `BottomAppBar` avec 3 onglets **Currently / Today / Weekly**,
-      chacun avec un **nom + une icône**. Changement d'onglet au **clic ET au swipe** (les
-      deux doivent marcher). Chaque onglet affiche juste son nom en texte pour l'instant.
-      **Currently** sélectionné au démarrage.
-      → Widgets suggérés par le sujet : `TabBar`, `TabBarView`, `BottomAppBar`
-      (typiquement `DefaultTabController` + `TabBarView` pour le swipe, et la `TabBar`
-      posée dans le `bottomNavigationBar` du `Scaffold`).
-- [ ] **ex01 — TopBar** : `AppBar` contenant un `TextField` de recherche + un bouton de
-      géolocalisation. Taper du texte → les 3 onglets affichent « nom de l'onglet + le texte
-      saisi ». Cliquer le bouton géoloc → les 3 onglets affichent « nom de l'onglet +
-      Geolocation ». Les deux doivent fonctionner.
+- [x] **ex00 — BottomBar** ✅ — `DefaultTabController` enveloppant le `Scaffold`, `TabBar`
+      dans `bottomNavigationBar: BottomAppBar(...)`, `TabBarView` en `body`. Le clic **et**
+      le swipe marchent sans une ligne de code : les deux widgets écoutent le **même**
+      `TabController`, qui ne stocke qu'un `int index`. `TabBarView` affiche `children[index]`
+      → aucun `if`, c'est **la position dans les listes** qui fait le lien.
+      Deux `collection for` sur la même liste `onglets` ⇒ ordre garanti identique.
+- [x] **ex01 — TopBar** ✅ — passage en `StatefulWidget`. `TextField` dans `AppBar(title:)`,
+      bouton géoloc dans `AppBar(actions:)`. `_lieu` vit dans le `State` **au-dessus** des
+      3 onglets → un seul `setState` met à jour les trois.
+      `TextEditingController` en champ du `State` + `dispose()`.
 
-> Le sujet précise que ce projet **continue au module suivant** → soigner la structure
-> (séparer les vues dans `lib/`, ne pas tout entasser dans `main.dart`).
+### Module 2 — EN COURS (medium_weather_app)
 
-### Module 2 — À FAIRE (medium_weather_app)
+Projet créé **neuf** (`flutter create`) puis `lib/main.dart` repris du module 01 — plutôt
+qu'un `cp -r` de `weather_app`, qui aurait traîné l'ancien nom de package partout.
 
-Copie de `weather_app` → `medium_weather_app`, puis :
-
-- [ ] **ex00 — Where are we?** : géoloc via le **GPS du device** (`geolocator`), au démarrage
-      ET au clic sur le bouton. Demander la permission. Gérer les **deux** cas :
-      - permission accordée → récupérer les coordonnées, les afficher en texte pour l'instant ;
-      - permission refusée → l'appli continue de marcher via la recherche par ville, mais
-        l'utilisateur est **informé** qu'on n'a pas accès à sa position.
-      ⚠️ **Interdit** d'utiliser une API externe pour la géoloc : c'est le GPS ou rien.
+- [x] **ex00 — Where are we?** ✅ — `geolocator`, permissions `ACCESS_FINE/COARSE_LOCATION`
+      + `INTERNET` ajoutées à `android/app/src/main/AndroidManifest.xml`.
+      État : `String _lieu` **et** `String? _erreur` (une seule `String` ne peut pas porter
+      « voici une ville » et « voici une erreur » — le `build()` ne saurait pas laquelle il tient).
+      Flux : `isLocationServiceEnabled()` → `checkPermission()` → `requestPermission()` si
+      `denied` → `getCurrentPosition()`. `requestPermission()` **rend** la nouvelle valeur,
+      donc pas de re-check. `deniedForever` traité à part : redemander n'affiche aucune boîte
+      de dialogue et retombe immédiatement sur un refus.
+      `initState()` couvre « au démarrage », l'`IconButton` couvre « au clic ».
+      **Vérifié sur l'émulateur** (pas seulement compilé) : accordé → `48.8566, 2.3521983` ;
+      refusé → message rouge ; recherche `Marseille` après refus → OK.
+      Choix assumé, discutable en soutenance : chercher une ville **efface** le message de
+      refus (l'utilisateur a trouvé le contournement proposé).
+- [ ] **ex01 — Searcher** : recherche par nom de ville/pays/région via l'**API Geocoding
+      Open-Meteo**. Liste de **suggestions** mise à jour **dynamiquement** pendant la frappe,
+      chaque suggestion affichant **nom de ville + région + pays**. Sélectionner une
+      suggestion → météo de cette ville. La recherche doit aussi marcher **sans** choisir
+      dans la liste.
 - [ ] **ex01 — Searcher** : recherche par nom de ville/pays/région via l'**API Geocoding
       Open-Meteo**. Liste de **suggestions** mise à jour **dynamiquement** pendant la frappe,
       chaque suggestion affichant **nom de ville + région + pays**. Sélectionner une
@@ -268,44 +344,48 @@ Copie de `diary_app` → `advanced_diary_app`. 3 pages : login, profil, agenda.
 
 ## Prochaines étapes immédiates
 
-1. `flutter create --platforms=android,web --org com.rayane mobileModule00/ex01`.
-2. Recopier le `main.dart` d'ex00 comme point de départ.
-3. **La nouveauté d'ex01 : le texte doit changer au clic** → il faut mémoriser lequel est
-   affiché → `StatefulWidget` + `setState()`. C'est là que `runApp()` ne pourra plus recevoir
-   l'arbre directement : il faudra enfin écrire une classe.
+**Module 02 ex01 — Searcher.** Découpé, briques identifiées, **rien d'écrit encore** :
 
-## Le `main.dart` d'ex00 (point de départ d'ex01)
+1. `lib/ville.dart` — classe `Ville` (5 champs `final` : `nom`, `region`, `pays`, `lat`, `lon`)
+   + constructeur nommé `Ville.fromJson(Map<String, dynamic>)`.
+2. `flutter pub add http` puis l'appel API.
+3. Debounce sur `onChanged` du `TextField`.
+4. Affichage de la liste de suggestions (ville + région + pays), clic → sélection.
+   La recherche doit aussi marcher **sans** cliquer dans la liste.
+5. Puis ex02 (remplir les 3 vues) et ex03 (gestion d'erreurs).
 
-```dart
-import 'package:flutter/material.dart';
+`PROJ` du `Makefile` pointe déjà sur `mobileModule02/medium_weather_app`.
 
-void main() {
-  runApp(
-    MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Test'),
-              ElevatedButton(
-                onPressed: () {
-                  debugPrint('Button pressed');
-                },
-                child: Text('Click me'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
-}
+### Ce que l'API Geocoding renvoie réellement (vérifié au `curl`)
+
+`https://geocoding-api.open-meteo.com/v1/search?name=<q>&count=10&language=fr&format=json`
+
+Une trentaine de champs par ville, dont 5 utiles :
+
+```
+name       "Marseille"        la ville
+admin1     "Région PACA"      la région   ⚠ le champ s'appelle admin1, PAS region
+country    "France"           le pays
+latitude   43.29695           pour la météo à l'ex02
+longitude  5.38107
 ```
 
-Choix assumé pour ex00 : **pas de classe `MyApp`**, `runApp()` reçoit directement l'arbre.
-L'écran est statique, donc `StatelessWidget` + `build()` + `@override` seraient du bruit.
-**Ça ne tiendra plus dès ex01.**
+⚠️ **Piège majeur, vaut l'ex03** : quand aucune ville ne correspond, l'API ne renvoie **pas**
+un tableau vide mais un JSON **sans la clé `results`** :
+
+```json
+{"generationtime_ms": 0.41782856}
+```
+
+Donc `data['results']` vaut **`null`**, pas `[]` → boucler dessus crashe (déréférencement de
+pointeur nul). Toujours tester `if (resultats == null)` avant la boucle.
+
+Autres pièges du parsing : `admin1` et `country` sont parfois **absents** (petites localités,
+îles) → `json['admin1'] ?? ''` ; les coordonnées arrivent parfois en `int` →
+`(json['latitude'] as num).toDouble()`.
+
+**Non commité à ce stade :** le `Makefile`, la mise à jour de ce fichier, et
+`mobileModule02/` (ex00 terminé). Le module 01 est commité (`07d67e5`).
 
 ## Concepts Flutter à assimiler (mémo, à remplir au fur et à mesure)
 
@@ -391,14 +471,91 @@ State<Calculatrice>  un template C++, du TYPAGE — aucune donnée ne transite l
   `FlatButton`→`TextButton`, `OutlineButton`→`OutlinedButton`. Les vieilles réponses Stack
   Overflow utilisent les noms morts.
 
+### Acquis au module 1 (navigation, async)
+
+- **`DefaultTabController`** crée et partage un `TabController` avec **tous ses descendants**.
+  `TabBar` le récupère via `DefaultTabController.of(context)`, qui **remonte l'arbre** — d'où
+  l'obligation de le placer **au-dessus** du `Scaffold`. Trop bas ⇒ `No TabController for TabBar`.
+- Le contrôleur ne stocke qu'un **`int index`** et notifie ses abonnés (patron **observateur**).
+  Clic sur `TabBar` ou swipe sur `TabBarView` → même index → l'autre suit. **Rien à coder.**
+- **L'état monte au plus proche ancêtre commun** de ceux qui en ont besoin. `_lieu` est dans
+  `_WeatherAppState`, au-dessus des 3 onglets → un `setState` les rafraîchit toutes les trois.
+- **`initState()`** = 1 fois à la naissance, **`build()`** = N fois, **`dispose()`** = 1 fois à
+  la mort définitive. `dispose` n'est **pas** appelé à chaque `setState` : c'est un destructeur
+  C++, pas un `clear()`. Règle : tout `= XxxController()` se libère dans `dispose()`.
+- **`Future<T>`** = `std::future<T>`. `await` n'est utilisable que dans une fonction `async`,
+  et une fonction `async` retourne toujours un `Future`. Contrairement à `std::future::get`,
+  `await` **ne bloque pas** : il rend la main à l'UI et reprend au retour.
+- **`build()` ne peut jamais être `async`** — il doit rendre un widget immédiatement.
+- **`setState(() async {...})` ne marche pas.** Tous les `await` d'abord, puis un `setState`
+  purement synchrone qui ne fait qu'affecter les variables.
+- **`String?`** = peut valoir `null` (l'absence, distincte de la chaîne vide). `String x = null;`
+  ne compile pas. `x!` affirme au compilateur que ce n'est pas `null` à cet endroit.
+- **`collection for` / `collection if`** : boucle et condition **dans** un littéral de liste.
+  Ce sont des *expressions* → pas d'accolades, pas de `;`, une virgule à la fin. Équivalent du
+  `push_back` en boucle, mais l'arbre reste déclaratif d'un seul tenant (et `const`-able).
+  Version « classique » possible en construisant une `List<Widget>` avant le `return`, mais
+  l'arbre devient discontinu. Pour une liste **longue ou scrollable** : `ListView.builder`,
+  qui ne construit que les éléments visibles.
+- **`flex` est un nombre de parts, pas un nombre de morceaux.** Chacun reçoit
+  `son flex / somme des flex`, **recalculée par ligne**. Donc `1/1`, `2/2` et `50/50` donnent
+  tous 50 % — mettre `flex: 2` sur les deux seuls boutons d'une ligne ne change **rien**.
+  Pour aligner 2 boutons sur une grille de 4 colonnes : `Spacer(flex: 4 - ligne.length)`.
+  ⚠️ `Spacer` impose `flex > 0` → garder le `if (ligne.length < 4)`, sinon crash à l'exécution.
+- **`Expanded` vs `Flexible`** : `Expanded` prend **toute** sa part (`FlexFit.tight`),
+  `Flexible` **au plus** sa part et se rétracte si l'enfant est plus petit. `Spacer` = un
+  `Expanded` vide. Pas de widget « split », ça n'existe pas.
+
+### Briques du module 2 (réseau, JSON, null safety)
+
+- **`Map` vs classe.** `jsonDecode` rend une `Map<String, dynamic>` → `ville['name']`, clés
+  vérifiées à l'**exécution** (`ville['nam']` compile, rend `null`, crashe plus tard).
+  Une `class` → `ville.nom`, champs vérifiés à la **compilation**. Tableau associatif contre
+  `struct`. Pour 5 champs relus partout : la classe.
+- **Constructeur nommé** `Ville.fromJson(...)` : un deuxième constructeur après un point.
+  Le `:` avant le `;` est la **liste d'initialisation du C++** — obligatoire ici parce que
+  les champs sont `final`. Il convertit **une** ville, il ne boucle pas.
+- **`dynamic`** = type inconnu à la compilation, un `void*` : Dart ne vérifie plus rien.
+  D'où l'intérêt de repasser en classe typée le plus tôt possible.
+- **Les trois opérateurs null**, à ne pas confondre :
+  ```
+  a?.b()    appelle b() seulement si a n'est pas null   (≡ if (a != null) a.b())
+  a ?? c    si a est null, prends c
+  a!        "je garantis que a n'est pas null" (crashe si tu mens)
+  ```
+- **`http`** : `await http.get(Uri.parse(url))`. `Uri.parse` obligatoire, `http.get` refuse
+  une `String`. `reponse.statusCode` (200 = OK) et `reponse.body` (le JSON en `String` brute).
+  `import ... as http` = un préfixe de namespace, comme `namespace` en C++.
+- **`throttle` vs `debounce`** : throttle = 1 appel max toutes les 300 ms, régulièrement ;
+  debounce = 1 appel après 300 ms de **silence**. Pour une recherche c'est le **debounce**.
+  Découper « tous les X caractères » ne marche pas : « Nice » fait 4 lettres et l'utilisateur
+  s'arrête là.
+  ```dart
+  Timer? _debounce;
+  _debounce?.cancel();
+  _debounce = Timer(Duration(milliseconds: 300), () { /* requête */ });
+  ```
+  ⚠️ `_debounce?.cancel()` **aussi dans `dispose()`** : un timer qui se déclenche après la
+  mort du widget appelle `setState` sur un `State` détruit → crash.
+- **Le `collection for` marche sur n'importe quelle liste**, pas seulement sur des widgets :
+  `_suggestions = [for (final j in resultats) Ville.fromJson(j)];`
+  Même syntaxe que les 18 boutons de la calculatrice, appliquée à des données.
+
 ### Pièges d'outillage rencontrés
 
 - **`flutter: command not found`** dans un terminal déjà ouvert → le `~/.bashrc` a été modifié
   après son lancement : `source ~/.bashrc`.
+- **`flutter format` n'existe plus** → `dart format .`.
+- **`flutter analyze` sort en code 1 même pour un simple `info`** → `--no-fatal-infos` dans le
+  `Makefile`, sinon `make check` échoue sur une suggestion de style.
+- **`use_key_in_widget_constructors`** : `info` présent sur tous les projets depuis le module 0.
+  Se règle avec `const MonWidget({super.key});`. Boilerplate écarté volontairement — à trancher.
 - **Erreur `client.js` / `_JsonMap is not a subtype of List<Object?>`** au lancement web : bug
   de l'outillage `webdev`/DWDS (le client de debug injecté), **pas du code**. `flutter analyze`
   reste clean. Contournements : rafraîchir la page, relancer `flutter run`, ou en dernier
   recours `--no-injected-client` (mais on perd le hot reload).
+- **VS Code auto-importe parfois `dart:math`** en tapant `MainAxisSize.min` → `unused_import`
+  attrapé par `flutter analyze`.
 
 ### À venir
 
@@ -419,13 +576,14 @@ State<Calculatrice>  un template C++, du TYPAGE — aucune donnée ne transite l
 
 ```bash
 git clone git@github.com:gekid00/piscine_mobile.git   # ou git pull si déjà cloné
-cd piscine_mobile/mobileModule00/ex00
-flutter pub get                            # deps non versionnées → réinstaller
-flutter run -d web-server --web-port 8080  # ou -d chrome / -d <device android>
+cd piscine_mobile
+make check          # dart format + flutter analyze sur PROJ
+make                # démarre l'AVD, compile, installe, lance
 ```
 
-Si Flutter n'est pas installé sur la machine : voir « Machine maison (WSL) » plus haut, la
-méthode par tarball marche sans droits root.
+Si Flutter n'est pas installé : voir « Machine maison (WSL) » plus haut (tarball, sans root).
+Si l'Android SDK n'est pas installé : voir « Android SDK + émulateur » — ne pas oublier le
+`usermod -aG kvm` **et** `libnss3`, les deux seules étapes qui demandent `sudo`.
 
 ## Travailler depuis le téléphone (Remote Control)
 
