@@ -48,3 +48,8 @@ npm-debug.*
 yarn-debug.*
 yarn-error.*
 *.pem
+
+# 42 subjects and personal notes
+*.pdf
+CLAUDE.md
+CONTEXT.md
